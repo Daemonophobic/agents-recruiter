@@ -1,2 +1,8 @@
+# IDE
 .venv
 .idea
+
+# Development
+kers/__pycache__/
+test.py
+confg.json
