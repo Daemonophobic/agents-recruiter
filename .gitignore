@@ -6,3 +6,5 @@
 kers/__pycache__/
 test.py
 confg.json
+dist
+kers.egg-info

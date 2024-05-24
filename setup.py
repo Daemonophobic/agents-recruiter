@@ -20,7 +20,7 @@ setup(
     long_description_content_type='text/markdown',
     long_description=long_description,
     packages=find_packages(),
-    install_requires=['requests', 'python3-nmap', 'paramiko'],
+    install_requires=['requests', 'python3-nmap', 'paramiko', 'bs4', 'scp'],
     keywords=['python', 'enumeration', 'reconnaissance', 'c2', 'breach-simulation', 'network-analysis'],
     classifiers=[
         'Development Status :: 2 - Development',

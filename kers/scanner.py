@@ -1,6 +1,5 @@
 import nmap3
 
-
 class Scanner:
     def __init__(self):
         self._nmap = nmap3.Nmap()
@@ -12,7 +11,6 @@ class Scanner:
 
         for ip in ips:
             result = self.scan(ip, ports)
-            print(result)
             results[ip] = result
 
         return results
@@ -20,6 +18,9 @@ class Scanner:
     def scan(self,
              host,
              ports: list):
-        for port in self._nmap.scan_command(host, arg="-p 80,22").findall('host/ports')[0].iter('port'):
-            print({'port': port.attrib['portid'], 'state': port.findall('state')[0].attrib['state']})
-        return ""
+        port_list = []
+        for port in self._nmap.scan_command(host, arg=f"-p {','.join(ports)}").findall('host/ports')[0].iter('port'):
+            if port.findall('state')[0].attrib['state'] == 'closed':
+                continue
+            port_list.append({'port': port.attrib['portid'], 'state': port.findall('state')[0].attrib['state']})
+        return port_list
