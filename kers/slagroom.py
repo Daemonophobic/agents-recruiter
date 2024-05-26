@@ -65,7 +65,7 @@ class Slagroom:
         self._apiClient = ApiClient(self._config["API_URL"], self._config["JWT_TOKEN"])
         self._scanner = Scanner()
         self._breacher = Breacher()
-        self._intruder = Intruder()
+        self._intruder = Intruder(self._apiClient)
         self._task_queue = queue.Queue()
         self._task = None
         self._thread = threading.Thread(target=self._worker, daemon=True)
@@ -115,8 +115,8 @@ class Slagroom:
                         output = self._breacher.breach(task["ips"], task["ports"])
                         print(f"[Slagroom] Output: {output}")
                     case 'intrude':
-                        print(f"[Slagroom] Intruding {task['ip']}")
-                        output = self._intruder.intrude(task['ip'], task['port'], task['os'])
+                        print(f"[Slagroom] Intruding {task['ips']}")
+                        output = self._intruder.intrude(task['ips'])
                         print(f"[Slagroom] Output: {output}")
                 self._task_queue.task_done()
                 time.sleep(self._wait_time)

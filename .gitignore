@@ -5,6 +5,9 @@
 # Development
 kers/__pycache__/
 test.py
-confg.json
+config.json
 dist
 kers.egg-info
+
+# Compiling
+tmp/
