@@ -14,7 +14,12 @@ class Scanner:
         for ip in tqdm(ips):
             result = self.scan(ip, ports)
             if result:
-                results[ip] = result
+                one_open = False
+                for port in result:
+                    if port['state'] == 'open':
+                        one_open = True
+                if one_open:
+                    results[ip] = result
             else:
                 continue
         return results
