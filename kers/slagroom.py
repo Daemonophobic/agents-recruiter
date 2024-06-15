@@ -136,7 +136,7 @@ class Slagroom:
                 if task['command'] == 'recruiter.scan':
                     ips = ip_parse(task['subnets'])
                     print(f"[Slagroom] Scanning {ips}")
-                    scan_output = self._scanner.scan_range(ips, ["8181"])
+                    scan_output = self._scanner.scan_range(ips, ["22", "80"])
                     print(f"[Slagroom] Breaching {scan_output}")
                     breach_output = self._breacher.breach(scan_output)
                     print(f"[Slagroom] Output: {breach_output}")
