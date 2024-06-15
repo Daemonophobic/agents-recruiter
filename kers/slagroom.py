@@ -88,12 +88,12 @@ class Slagroom:
         self._wait_time = 10
         self._die = 1
         self._apiClient = ApiClient(self._config["API_URL"], self._config["JWT_TOKEN"])
+        Path("www").mkdir(parents=True, exist_ok=True)
         self._scanner = Scanner()
         self._breacher = Breacher()
         self._intruder = Intruder(self._apiClient)
         self._task_queue = queue.Queue()
         self._task = None
-        Path("www").mkdir(parents=True, exist_ok=True)
         self._www_thread = threading.Thread(target=_start_webserver, daemon=True).start()
         self._thread = threading.Thread(target=self._worker, daemon=True)
 
