@@ -21,15 +21,8 @@ class ApiClient:
     def check_in(self):
         cookies = {"session": self._jwtToken}
         headers = {"Content-Type": "application/json"}
-        if True:
-            return {'commands': [
-                {
-                    'command': 'intrude',
-                    'ips': ['192.168.135.143'],
-                    'port': '22',
-                    'os': 'linux'
-                }
-                ]}
+        response = requests.get(f"{self._apiUrl}/jobs/recruiter", cookies=cookies, headers=headers)
+        return response.json()
 
     def get_bin(self, agentId, comToken, ip):
         cookies = {"session": self._jwtToken}

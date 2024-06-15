@@ -5,9 +5,11 @@
 # Development
 kers/__pycache__/
 test.py
+testhttp.py
 config.json
 dist
 kers.egg-info
 
 # Compiling
 tmp/
+www/

