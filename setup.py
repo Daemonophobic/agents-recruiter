@@ -12,7 +12,7 @@ DESCRIPTION = 'Enumerating networks and finding optimal pathways'
 
 # Setting up
 setup(
-    name='kers',
+    name='libkers',
     version=VERSION,
     author='a-ware (Project A-ware)',
     author_email='<all@stickybits.red>',
@@ -23,7 +23,7 @@ setup(
     install_requires=['requests', 'python3-nmap', 'paramiko', 'bs4', 'scp', 'tqdm'],
     keywords=['python', 'enumeration', 'reconnaissance', 'c2', 'breach-simulation', 'network-analysis'],
     classifiers=[
-        'Development Status :: 2 - Development',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'Programming Language :: Python :: 3',
         'Operating System :: Unix',

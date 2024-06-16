@@ -20,11 +20,11 @@ import http.server
 import socketserver
 from pathlib import Path
 
-from kers.apiClient import ApiClient
-from kers.scanner import Scanner
-from kers.breacher import Breacher
-from kers.intruder import Intruder
-from kers.ipParse import ip_parse
+from libkers.apiClient import ApiClient
+from libkers.scanner import Scanner
+from libkers.breacher import Breacher
+from libkers.intruder import Intruder
+from libkers.ipParse import ip_parse
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -86,7 +86,10 @@ class Slagroom:
         self._verify_config()
 
         self._wait_time = 10
-        self._die = 1
+        if self._config["KEEP_GOING"] == 0:
+            self._die = 1
+        else:
+            self._die = 0
         self._apiClient = ApiClient(self._config["API_URL"], self._config["JWT_TOKEN"])
         Path("www").mkdir(parents=True, exist_ok=True)
         self._scanner = Scanner()
@@ -114,6 +117,8 @@ class Slagroom:
     def _verify_config(self) -> None:
         if 'API_URL' not in self._config.keys() or 'JWT_TOKEN' not in self._config.keys():
             raise ValueError(f"Config does not hold all expected keys: {['API_URL', 'JWT_TOKEN']}")
+        elif 'KEEP_GOING' not in self._config:
+            self._config['KEEP_GOING'] = 1
 
     def _fill_queue(self) -> None:
         tasks = self._apiClient.check_in()
@@ -144,7 +149,10 @@ class Slagroom:
                     intrude_output = self._intruder.intrude(breach_output)
                     print(f"[Slagroom] Output: {intrude_output}")
                 self._task_queue.task_done()
-                time.sleep(self._wait_time)
+                if self._die == 1:
+                    sys.exit(0)
+                else:
+                    time.sleep(self._wait_time)
             except KeyboardInterrupt:
                 sys.exit(0)
 
