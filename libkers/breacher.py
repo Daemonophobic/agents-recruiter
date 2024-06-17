@@ -31,14 +31,14 @@ class Breacher:
 
     def attempt(self, ip, ports):
         for port in ports:
-            match port_dict[port]:
-                case 'ssh':
-                    if self.attempt_ssh(ip, port) == 'student':
-                        return {'service': 'ssh', 'port': port}
-                case 'http':
+            port_service = port_dict[port]
+
+            if port_service == 'ssh':
+                if self.attempt_ssh(ip, port) == 'student':
+                    return {'service': 'ssh', 'port': port}
+                elif port_service == 'http':
                     if self.attempt_http(ip, port):
                         return {'service': 'http', 'port': port}
-
         return False
 
     @staticmethod
